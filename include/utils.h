@@ -87,6 +87,7 @@ int get_prefix(inet_prefix *dst, char *arg, int family);
 int mask2bits(__u32 netmask);
 int get_addr_ila(__u64 *val, const char *arg);
 
+int read_prop(char *dev, char *prop, long *value);
 int get_hex(char c);
 int get_integer(int *val, const char *arg, int base);
 int get_unsigned(unsigned *val, const char *arg, int base);

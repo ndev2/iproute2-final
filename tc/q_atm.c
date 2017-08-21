@@ -45,7 +45,7 @@ static void explain(void)
 
 
 static int atm_parse_class_opt(struct qdisc_util *qu, int argc, char **argv,
-   struct nlmsghdr *n)
+	struct nlmsghdr *n, char *dev)
 {
 	struct sockaddr_atmsvc addr = {};
 	struct atm_qos qos;
