@@ -1,12 +1,12 @@
 /*
- * q_fifo.c		FIFO.
+ * q_gkprioq.c		GATEKEEPER PRIORITY QUEUE.
  *
  *		This program is free software; you can redistribute it and/or
  *		modify it under the terms of the GNU General Public License
  *		as published by the Free Software Foundation; either version
  *		2 of the License, or (at your option) any later version.
  *
- * Authors:	Alexey Kuznetsov, <kuznet@ms2.inr.ac.ru>
+ * Authors:	Nishanth Devarajan, <ndev_2021@gmail.com>
  *
  */
 
@@ -25,13 +25,13 @@
 
 static void explain(void)
 {
-	fprintf(stderr, "Usage: ... <[p|b]fifo | pfifo_head_drop> [ limit NUMBER ]\n");
+	fprintf(stderr, "Usage: ... <gkprioq> [ limit NUMBER ]\n");
 }
 
-static int fifo_parse_opt(struct qdisc_util *qu, int argc, char **argv, struct nlmsghdr *n, char *dev)
+static int gkprioq_parse_opt(struct qdisc_util *qu, int argc, char **argv, struct nlmsghdr *n, char *dev)
 {
 	int ok = 0;
-	struct tc_fifo_qopt opt = {};
+	struct tc_gkprioq_qopt opt = {};
 
 	while (argc > 0) {
 		if (strcmp(*argv, "limit") == 0) {
@@ -57,9 +57,9 @@ static int fifo_parse_opt(struct qdisc_util *qu, int argc, char **argv, struct n
 	return 0;
 }
 
-static int fifo_print_opt(struct qdisc_util *qu, FILE *f, struct rtattr *opt)
+static int gkprioq_print_opt(struct qdisc_util *qu, FILE *f, struct rtattr *opt)
 {
-	struct tc_fifo_qopt *qopt;
+	struct tc_gkprioq_qopt *qopt;
 
 	if (opt == NULL)
 		return 0;
@@ -67,35 +67,13 @@ static int fifo_print_opt(struct qdisc_util *qu, FILE *f, struct rtattr *opt)
 	if (RTA_PAYLOAD(opt)  < sizeof(*qopt))
 		return -1;
 	qopt = RTA_DATA(opt);
-	if (strcmp(qu->id, "bfifo") == 0) {
-		SPRINT_BUF(b1);
-		fprintf(f, "limit %s", sprint_size(qopt->limit, b1));
-	} else
-		fprintf(f, "limit %up", qopt->limit);
+	fprintf(f, "limit %up", qopt->limit);
 	return 0;
 }
 
 
-struct qdisc_util bfifo_qdisc_util = {
-	.id = "bfifo",
-	.parse_qopt = fifo_parse_opt,
-	.print_qopt = fifo_print_opt,
-};
-
-struct qdisc_util pfifo_qdisc_util = {
-	.id = "pfifo",
-	.parse_qopt = fifo_parse_opt,
-	.print_qopt = fifo_print_opt,
-};
-
-struct qdisc_util pfifo_head_drop_qdisc_util = {
-	.id = "pfifo_head_drop",
-	.parse_qopt = fifo_parse_opt,
-	.print_qopt = fifo_print_opt,
-};
-
-extern int prio_print_opt(struct qdisc_util *qu, FILE *f, struct rtattr *opt);
-struct qdisc_util pfifo_fast_qdisc_util = {
-	.id = "pfifo_fast",
-	.print_qopt = prio_print_opt,
+struct qdisc_util gkprioq_qdisc_util = {
+	.id = "gkprioq",
+	.parse_qopt = gkprioq_parse_opt,
+	.print_qopt = gkprioq_print_opt,
 };

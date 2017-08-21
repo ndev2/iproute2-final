@@ -192,6 +192,86 @@ static const struct rate_suffix {
 };
 
 
+int get_percent_rate(unsigned int *rate, const char *str, char *dev)
+{
+	long value;
+	char percent[strlen(dev) - 1], r_str[20];
+	const char *pos;
+	int ret;
+	double d, r;
+
+	if (read_prop(dev, "speed", &value))
+		return -1;
+
+	pos = str + strlen(str) -1;
+	if (*pos != '%') {
+		fprintf(stderr, "Specified rate value is malformed \n");
+		return -1;
+	}
+
+	strncpy(percent, str, strlen(str) -1);
+	ret = sscanf(percent, "%lf", &d);
+	if (ret != 1) {
+		fprintf(stderr, "Specified rate value is malformed \n");
+		return -1;
+	}
+
+	if (d > 100.0 || d < 0.0) {
+		fprintf(stderr, "Invalid rate specified \n");
+		return -1;
+	}
+
+	r = (d*value) / 100.0;
+
+	ret = snprintf(r_str, 20, "%f", r);
+	if (ret <= 0 || ret >= 20) {
+		fprintf(stderr, "Invalid rate specified \n");
+		return -1;
+	}
+
+	return get_rate(rate, r_str);
+}
+
+int get_percent_rate64(__u64 *rate, const char *str, char *dev)
+{
+	long value;
+	char percent[strlen(dev) - 1], r_str[20];
+	const char *pos;
+	int ret;
+	double d, r;
+
+	if (read_prop(dev, "speed", &value))
+		return -1;
+
+	pos = str + strlen(str) -1;
+	if (*pos != '%') {
+		fprintf(stderr, "Specified rate value is malformed \n");
+		return -1;
+	}
+
+	strncpy(percent, str, strlen(str) -1);
+	ret = sscanf(percent, "%lf", &d);
+	if (ret != 1) {
+		fprintf(stderr, "Specified rate value is malformed \n");
+		return -1;
+	}
+
+	if (d > 100.0 || d < 0.0) {
+		fprintf(stderr, "Invalid rate specified \n");
+		return -1;
+	}
+
+	r = (d*value) / 100.0;
+	ret = snprintf(r_str, 20, "%f", r);
+	if (ret <= 0 || ret >= 20) {
+		fprintf(stderr, "Invalid rate specified \n");
+		return -1;
+	}
+
+	return get_rate64(rate, r_str);
+
+}
+
 int get_rate(unsigned int *rate, const char *str)
 {
 	char *p;
