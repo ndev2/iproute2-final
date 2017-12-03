@@ -709,12 +709,17 @@ int parse_action_control_slash(int *argc_p, char ***argv_p,
 void print_action_control(FILE *f, const char *prefix,
 			  int action, const char *suffix)
 {
-	fprintf(f, "%s%s", prefix, action_n2a(action));
+	print_string(PRINT_FP, NULL, "%s", prefix);
+	open_json_object("control_action");
+	print_string(PRINT_ANY, "type", "%s", action_n2a(action));
 	if (TC_ACT_EXT_CMP(action, TC_ACT_GOTO_CHAIN))
-		fprintf(f, " chain %u", action & TC_ACT_EXT_VAL_MASK);
+		print_uint(PRINT_ANY, "chain", " chain %u",
+			   action & TC_ACT_EXT_VAL_MASK);
 	if (TC_ACT_EXT_CMP(action, TC_ACT_JUMP))
-		fprintf(f, " %u", action & TC_ACT_EXT_VAL_MASK);
-	fprintf(f, "%s", suffix);
+		print_uint(PRINT_ANY, "jump", " %u",
+			   action & TC_ACT_EXT_VAL_MASK);
+	close_json_object();
+	print_string(PRINT_FP, NULL, "%s", suffix);
 }
 
 int get_linklayer(unsigned int *val, const char *arg)
@@ -762,12 +767,21 @@ void print_tm(FILE *f, const struct tcf_t *tm)
 {
 	int hz = get_user_hz();
 
-	if (tm->install != 0)
-		fprintf(f, " installed %u sec", (unsigned int)(tm->install/hz));
-	if (tm->lastuse != 0)
-		fprintf(f, " used %u sec", (unsigned int)(tm->lastuse/hz));
-	if (tm->expires != 0)
-		fprintf(f, " expires %u sec", (unsigned int)(tm->expires/hz));
+	if (tm->install != 0) {
+		print_uint(PRINT_JSON, "installed", NULL, tm->install);
+		print_uint(PRINT_FP, NULL, " installed %u sec",
+			   (unsigned int)(tm->install/hz));
+	}
+	if (tm->lastuse != 0) {
+		print_uint(PRINT_JSON, "last_used", NULL, tm->lastuse);
+		print_uint(PRINT_FP, NULL, " used %u sec",
+			   (unsigned int)(tm->lastuse/hz));
+	}
+	if (tm->expires != 0) {
+		print_uint(PRINT_JSON, "expires", NULL, tm->expires);
+		print_uint(PRINT_FP, NULL, " expires %u sec",
+			   (unsigned int)(tm->expires/hz));
+	}
 }
 
 void print_tcstats2_attr(FILE *fp, struct rtattr *rta, char *prefix, struct rtattr **xstats)
@@ -781,16 +795,19 @@ void print_tcstats2_attr(FILE *fp, struct rtattr *rta, char *prefix, struct rtat
 		struct gnet_stats_basic bs = {0};
 
 		memcpy(&bs, RTA_DATA(tbs[TCA_STATS_BASIC]), MIN(RTA_PAYLOAD(tbs[TCA_STATS_BASIC]), sizeof(bs)));
-		fprintf(fp, "%sSent %llu bytes %u pkt",
-			prefix, (unsigned long long) bs.bytes, bs.packets);
+		print_string(PRINT_FP, NULL, "%s", prefix);
+		print_lluint(PRINT_ANY, "bytes", "Sent %llu bytes", bs.bytes);
+		print_uint(PRINT_ANY, "packets", " %u pkt", bs.packets);
 	}
 
 	if (tbs[TCA_STATS_QUEUE]) {
 		struct gnet_stats_queue q = {0};
 
 		memcpy(&q, RTA_DATA(tbs[TCA_STATS_QUEUE]), MIN(RTA_PAYLOAD(tbs[TCA_STATS_QUEUE]), sizeof(q)));
-		fprintf(fp, " (dropped %u, overlimits %u requeues %u) ",
-			q.drops, q.overlimits, q.requeues);
+		print_uint(PRINT_ANY, "drops", " (dropped %u", q.drops);
+		print_uint(PRINT_ANY, "overlimits", ", overlimits %u",
+			   q.overlimits);
+		print_uint(PRINT_ANY, "requeues", " requeues %u) ", q.requeues);
 	}
 
 	if (tbs[TCA_STATS_RATE_EST64]) {
@@ -799,8 +816,11 @@ void print_tcstats2_attr(FILE *fp, struct rtattr *rta, char *prefix, struct rtat
 		memcpy(&re, RTA_DATA(tbs[TCA_STATS_RATE_EST64]),
 		       MIN(RTA_PAYLOAD(tbs[TCA_STATS_RATE_EST64]),
 			   sizeof(re)));
-		fprintf(fp, "\n%srate %s %llupps ",
-			prefix, sprint_rate(re.bps, b1), re.pps);
+		print_string(PRINT_FP, NULL, "\n%s", prefix);
+		print_lluint(PRINT_JSON, "rate", NULL, re.bps);
+		print_string(PRINT_FP, NULL, "rate %s",
+			     sprint_rate(re.bps, b1));
+		print_lluint(PRINT_ANY, "pps", " %llupps", re.pps);
 	} else if (tbs[TCA_STATS_RATE_EST]) {
 		struct gnet_stats_rate_est re = {0};
 
@@ -808,6 +828,11 @@ void print_tcstats2_attr(FILE *fp, struct rtattr *rta, char *prefix, struct rtat
 		       MIN(RTA_PAYLOAD(tbs[TCA_STATS_RATE_EST]), sizeof(re)));
 		fprintf(fp, "\n%srate %s %upps ",
 			prefix, sprint_rate(re.bps, b1), re.pps);
+		print_string(PRINT_FP, NULL, "\n%s", prefix);
+		print_uint(PRINT_JSON, "rate", NULL, re.bps);
+		print_string(PRINT_FP, NULL, "rate %s",
+			     sprint_rate(re.bps, b1));
+		print_uint(PRINT_ANY, "pps", " %upps", re.pps);
 	}
 
 	if (tbs[TCA_STATS_QUEUE]) {
@@ -815,9 +840,12 @@ void print_tcstats2_attr(FILE *fp, struct rtattr *rta, char *prefix, struct rtat
 
 		memcpy(&q, RTA_DATA(tbs[TCA_STATS_QUEUE]), MIN(RTA_PAYLOAD(tbs[TCA_STATS_QUEUE]), sizeof(q)));
 		if (!tbs[TCA_STATS_RATE_EST])
-			fprintf(fp, "\n%s", prefix);
-		fprintf(fp, "backlog %s %up requeues %u ",
-			sprint_size(q.backlog, b1), q.qlen, q.requeues);
+			print_string(PRINT_FP, NULL, "\n%s", prefix);
+		print_uint(PRINT_JSON, "backlog", NULL, q.backlog);
+		print_string(PRINT_FP, NULL, "backlog %s",
+			     sprint_size(q.backlog, b1));
+		print_uint(PRINT_ANY, "qlen", " %up", q.qlen);
+		print_uint(PRINT_ANY, "requeues", " requeues %u", q.qlen);
 	}
 
 	if (xstats)
