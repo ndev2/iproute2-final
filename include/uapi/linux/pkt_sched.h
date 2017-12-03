@@ -124,6 +124,12 @@ struct tc_fifo_qopt {
 	__u32	limit;	/* Queue length: bytes for bfifo, packets for pfifo */
 };
 
+/* SKBPRIO section */
+
+struct tc_skbprio_qopt {
+	__u32	limit;		/* Queue length in packets. */
+};
+
 /* PRIO section */
 
 #define TCQ_PRIO_BANDS	16
